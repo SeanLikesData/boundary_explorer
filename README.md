@@ -4,7 +4,7 @@ A lightweight React + Python visualization tool for exploring administrative bou
 
 ## Architecture
 - **Backend**: FastAPI with endpoints that wrap wkls (countries, regions, places, search, boundary GeoJSON)
-- **Frontend**: React + Vite + TypeScript + Leaflet for map rendering
+- **Frontend**: React + Vite + TypeScript + MapLibre GL for map rendering
 - **Transport**: GeoJSON via JSON REST API
 - **Performance**: LRU cache for repeated wkls queries; abort controller for fetch cleanup
 
@@ -49,7 +49,7 @@ wkls_vis/
     src/
       App.tsx           - Main UI (country/region/place selectors, map)
       components/
-        MapView.tsx     - Leaflet map with GeoJSON overlay and auto-fit
+        MapView.tsx     - MapLibre GL map with GeoJSON overlay, auto-fit, and Map/Globe projection toggle
     vite.config.ts      - Vite dev server with proxy to backend
   README.md             - This file
 ```
@@ -57,8 +57,8 @@ wkls_vis/
 ## Performance notes
 - Backend uses `@lru_cache` to cache wkls DataFrame and GeoJSON lookups
 - Frontend uses AbortController to cancel in-flight requests when component unmounts or query changes
-- GeoJSON layer gets a stable key to prevent Leaflet console errors on re-render
+- Frontend uses MapLibre GL (GPU-accelerated). A single GeoJSON source is updated with setData; bounds are fit using @turf/bbox.
 
 ## Dependencies
 - Python: fastapi, uvicorn, wkls, pandas (managed by `uv`)
-- JS: react, react-leaflet, leaflet, vite, typescript (managed by `pnpm`)
+- JS: react, maplibre-gl, @turf/bbox, vite, typescript (managed by `pnpm`)

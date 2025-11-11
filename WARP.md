@@ -5,7 +5,7 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 ## Project overview
 Monorepo for a lightweight boundary explorer built with:
 - Backend: FastAPI wrapping the wkls library
-- Frontend: React + Vite + TypeScript + Leaflet
+- Frontend: React + Vite + TypeScript + MapLibre GL
 
 ## Repo layout
 - `server/` — FastAPI app (`server/app/main.py`), dependencies in `server/pyproject.toml` (use uv)
@@ -26,7 +26,7 @@ Monorepo for a lightweight boundary explorer built with:
 ### Frontend (React + Vite)
 - Dev proxy: requests starting with `/api` are proxied to `http://localhost:8000` (see `web/vite.config.ts`).
 - `web/src/App.tsx` orchestrates: load countries/regions, debounced search (≥2 chars; `%` wildcards), fetch boundary, export GeoJSON/WKT.
-- `web/src/components/MapView.tsx` renders the Leaflet map, auto-fits bounds, and uses a stable key for the GeoJSON overlay.
+- `web/src/components/MapView.tsx` renders the MapLibre GL map, supports a Map/Globe projection toggle, adds GeoJSON as a source with line/fill layers, and auto-fits bounds using @turf/bbox.
 
 ### Environment
 - Frontend reads `VITE_API_BASE` (defaults to `/api`). In dev you normally rely on the Vite proxy; set this if calling a different API host.

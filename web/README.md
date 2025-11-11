@@ -1,73 +1,48 @@
-# React + TypeScript + Vite
+# Boundary Explorer — Frontend (web)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite + TypeScript app that renders administrative boundaries with MapLibre GL.
 
-Currently, two official plugins are available:
+## Stack
+- React, Vite, TypeScript
+- MapLibre GL for map rendering (GPU-accelerated)
+- @turf/bbox for auto-fitting loaded geometry
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Getting started
+```bash
+pnpm --dir web install     # install deps
+pnpm --dir web dev         # start Vite (http://localhost:5173)
+```
+The dev proxy forwards `/api` → `http://localhost:8000` (see `vite.config.ts`). Start the backend separately:
+```bash
+uv run uvicorn server.app.main:app --reload --port 8000
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Environment
+- Optional: `VITE_API_BASE` (defaults to `/api`). Create `web/.env.local` if you need to point at a different API host:
+```env
+VITE_API_BASE=http://your-host:your-port/api
 ```
+
+## Scripts
+```bash
+pnpm --dir web build        # type-check + build
+pnpm --dir web preview      # serve the production build
+pnpm --dir web lint         # eslint
+pnpm --dir web tsc -b --noEmit  # type-check only
+```
+
+## Key files
+- `src/App.tsx` — UI (country/region/search, export GeoJSON/WKT, projection toggle)
+- `src/components/MapView.tsx` — MapLibre GL map: GeoJSON source + fill/line layers, auto-fit via `@turf/bbox`, Map/Globe projection via `setProjection`
+- `src/main.tsx` — imports `maplibre-gl/dist/maplibre-gl.css`
+- `vite.config.ts` — dev server proxy `/api` → backend
+
+## Basemap
+- Uses CARTO Dark Matter raster tiles (no API key). To use a vector style, pass a MapLibre style JSON URL in the map init.
+
+## Favicon
+- Globe emoji favicon is set in `web/index.html`.
+
+## Troubleshooting
+- If the globe view looks odd, ensure the MapLibre CSS is loaded (`import 'maplibre-gl/dist/maplibre-gl.css'` in `src/main.tsx`).
+- If API calls fail in dev, verify the backend is running on port 8000 or set `VITE_API_BASE`.

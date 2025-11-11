@@ -1,54 +1,139 @@
-import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet'
-import L from 'leaflet'
-import { useEffect, useMemo } from 'react'
-import type { GeoJSON as GeoJSONType } from 'geojson'
+import { useEffect, useRef } from 'react'
+import maplibregl from 'maplibre-gl'
+import bbox from '@turf/bbox'
+import type { GeoJSON as GeoJSONType, Feature, Geometry } from 'geojson'
 
-function FitBounds({ data }: { data: GeoJSONType | null }) {
-  const map = useMap()
-  useEffect(() => {
-    if (!data) return
-    const layer = L.geoJSON(data as any)
-    const bounds = layer.getBounds()
-    if (bounds.isValid()) {
-      map.fitBounds(bounds.pad(0.05))
-    }
-  }, [data, map])
-  return null
+function isFeature(g: GeoJSONType): g is Feature<Geometry> {
+  return (g as Feature<Geometry>).type === 'Feature' && !!(g as Feature<Geometry>).geometry
 }
 
-export default function MapView({ data }: { data: GeoJSONType | null }) {
-  // Stable key forces GeoJSON layer to unmount/remount when data changes (prevents leaflet console errors)
-  const dataKey = useMemo(() => (data ? JSON.stringify(data).slice(0, 100) : 'no-data'), [data])
+function toFeature(geom: GeoJSONType): Feature<Geometry> {
+  if (isFeature(geom)) return geom
+  return {
+    type: 'Feature',
+    geometry: geom as Geometry,
+    properties: {},
+  }
+}
 
-  // CARTO Dark Matter (no key required)
-  const tileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-  const attribution = '&copy; OpenStreetMap contributors &copy; CARTO'
+export default function MapView({ data, projection }: { data: GeoJSONType | null; projection: 'mercator' | 'globe' }) {
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const mapRef = useRef<maplibregl.Map | null>(null)
 
-  return (
-    <MapContainer
-      style={{ height: '100vh', width: '100vw' }}
-      center={[20, 0]}
-      zoom={2}
-      scrollWheelZoom
-      zoomSnap={1}
-      wheelDebounceTime={40}
-      wheelPxPerZoomLevel={60}
-    >
-      <TileLayer
-        url={tileUrl}
-        attribution={attribution}
-        minZoom={0}
-        maxNativeZoom={20}
-        maxZoom={20}
-        updateWhenZooming={false}
-        updateWhenIdle={true}
-        keepBuffer={1}
-        subdomains="abcd"
-      />
-      <FitBounds data={data} />
-      {data && (
-        <GeoJSON key={dataKey} data={data as any} style={() => ({ color: '#3b82f6', weight: 2.5, fillColor: '#3b82f6', fillOpacity: 0.1 })} />
-      )}
-    </MapContainer>
-  )
+  // init map once
+  useEffect(() => {
+    if (!containerRef.current) return
+    const map = new maplibregl.Map({
+      container: containerRef.current,
+      // Raster basemap (no API key required)
+      style: {
+        version: 8,
+        projection: { type: 'mercator' },
+        sources: {
+          rastertiles: {
+            type: 'raster',
+            tiles: [
+              'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+              'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+              'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+              'https://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+            ],
+            tileSize: 256,
+            attribution: '© OpenStreetMap contributors, © CARTO',
+          },
+        },
+        layers: [
+          { id: 'basemap', type: 'raster', source: 'rastertiles', minzoom: 0, maxzoom: 20 },
+        ],
+      },
+      center: [0, 20],
+      zoom: 2,
+    })
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
+    map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
+
+    // Apply initial projection once style is ready
+    map.once('style.load', () => {
+      try { map.setProjection({ type: projection }) } catch { /* ignore projection errors on init */ }
+    })
+
+    mapRef.current = map
+    return () => {
+      mapRef.current?.remove()
+      mapRef.current = null
+    }
+  }, [projection])
+
+  // Switch projection when prop changes (after init)
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    if (map.isStyleLoaded?.()) {
+      try { map.setProjection({ type: projection }) } catch { /* ignore projection errors when toggling */ }
+    } else {
+      map.once('style.load', () => {
+        try { map.setProjection({ type: projection }) } catch { /* ignore projection errors after style load */ }
+      })
+    }
+  }, [projection])
+
+  // update boundary layer when data changes
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+
+    const hasSource = !!map.getSource('boundary')
+
+    if (!data) {
+      if (map.getLayer('boundary-line')) map.removeLayer('boundary-line')
+      if (map.getLayer('boundary-fill')) map.removeLayer('boundary-fill')
+      if (hasSource) map.removeSource('boundary')
+      return
+    }
+
+    const feature = toFeature(data)
+
+    if (!hasSource) {
+      map.addSource('boundary', {
+        type: 'geojson',
+        data: feature,
+      })
+      if (!map.getLayer('boundary-fill')) {
+        map.addLayer({
+          id: 'boundary-fill',
+          type: 'fill',
+          source: 'boundary',
+          paint: { 'fill-color': '#3b82f6', 'fill-opacity': 0.1 },
+        })
+      }
+      if (!map.getLayer('boundary-line')) {
+        map.addLayer({
+          id: 'boundary-line',
+          type: 'line',
+          source: 'boundary',
+          paint: { 'line-color': '#3b82f6', 'line-width': 2.5 },
+        })
+      }
+    } else {
+      const src = map.getSource('boundary') as maplibregl.GeoJSONSource
+      src.setData(feature)
+    }
+
+    try {
+      const [minX, minY, maxX, maxY] = bbox(feature as unknown as GeoJSONType)
+      if (Number.isFinite(minX)) {
+        map.fitBounds(
+          [
+            [minX, minY],
+            [maxX, maxY],
+          ],
+          { padding: 20 },
+        )
+      }
+    } catch {
+      // ignore bbox failures
+    }
+  }, [data])
+
+  return <div ref={containerRef} style={{ height: '100vh', width: '100vw' }} />
 }

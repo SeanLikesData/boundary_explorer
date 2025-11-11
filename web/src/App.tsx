@@ -3,7 +3,7 @@ import './App.css'
 import MapView from './components/MapView'
 import type { GeoJSON as GeoJSONType } from 'geojson'
 
-const API_BASE = (import.meta as any).env?.VITE_API_BASE ?? '/api'
+const API_BASE = import.meta.env?.VITE_API_BASE ?? '/api'
 
 interface CountryRow { country: string; name: string }
 interface RegionRow { region: string; name: string }
@@ -22,8 +22,9 @@ export default function App() {
 
   const [geom, setGeom] = useState<GeoJSONType | null>(null)
   const [loadedPlace, setLoadedPlace] = useState<string>('')
+  const [projection, setProjection] = useState<'mercator' | 'globe'>('mercator')
 
-  const slug = (s: string) => s.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_\-]+/g, '')
+  const slug = (s: string) => s.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_-]+/g, '')
 
   const downloadBoundary = () => {
     if (!geom) return
@@ -132,7 +133,7 @@ export default function App() {
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
-      <MapView data={geom} />
+      <MapView data={geom} projection={projection} />
       
       {/* Floating search panel */}
       <div style={{
@@ -149,6 +150,38 @@ export default function App() {
       }}>
         <h2 style={{ margin: '0 0 16px 0', fontSize: 20, fontWeight: 600, color: '#1a1a1a' }}>Boundary Explorer</h2>
         
+        {/* Projection toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+          <span style={{ fontSize: 13, color: '#555' }}>Projection:</span>
+          <div style={{ display: 'inline-flex', border: '1px solid #ddd', borderRadius: 8, overflow: 'hidden' }}>
+            <button
+              onClick={() => setProjection('mercator')}
+              style={{
+                padding: '6px 10px',
+                fontSize: 12,
+                border: 'none',
+                background: projection === 'mercator' ? '#111827' : 'white',
+                color: projection === 'mercator' ? 'white' : '#111827',
+                cursor: 'pointer',
+              }}
+            >Map</button>
+            <button
+              onClick={() => setProjection('globe')}
+              style={{
+                padding: '6px 10px',
+                fontSize: 12,
+                borderLeft: '1px solid #ddd',
+                borderRight: 0,
+                borderTop: 0,
+                borderBottom: 0,
+                background: projection === 'globe' ? '#111827' : 'white',
+                color: projection === 'globe' ? 'white' : '#111827',
+                cursor: 'pointer',
+              }}
+            >Globe</button>
+          </div>
+        </div>
+
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div>
             <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6, color: '#555' }}>Country</label>

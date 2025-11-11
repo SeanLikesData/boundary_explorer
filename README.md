@@ -1,6 +1,6 @@
 # wkls-vis
 
-A lightweight React + Python visualization tool for exploring administrative boundaries using the [wkls](https://github.com/stvswnn/wkls) library.
+A lightweight React + Python visualization tool for exploring administrative boundaries using the [wkls](https://github.com/wherobots/wkls) library.
 
 ## Architecture
 - **Backend**: FastAPI with endpoints that wrap wkls (countries, regions, places, search, boundary GeoJSON)

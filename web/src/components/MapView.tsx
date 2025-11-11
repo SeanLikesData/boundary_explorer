@@ -25,13 +25,25 @@ export default function MapView({ data }: { data: GeoJSONType | null }) {
   const attribution = '&copy; OpenStreetMap contributors &copy; CARTO'
 
   return (
-    <MapContainer style={{ height: '100vh', width: '100vw' }} center={[20, 0]} zoom={2} scrollWheelZoom>
-      <TileLayer 
+    <MapContainer
+      style={{ height: '100vh', width: '100vw' }}
+      center={[20, 0]}
+      zoom={2}
+      scrollWheelZoom
+      zoomSnap={1}
+      wheelDebounceTime={40}
+      wheelPxPerZoomLevel={60}
+    >
+      <TileLayer
         url={tileUrl}
         attribution={attribution}
         minZoom={0}
-        maxZoom={22}
-        detectRetina
+        maxNativeZoom={20}
+        maxZoom={20}
+        updateWhenZooming={false}
+        updateWhenIdle={true}
+        keepBuffer={1}
+        subdomains="abcd"
       />
       <FitBounds data={data} />
       {data && (

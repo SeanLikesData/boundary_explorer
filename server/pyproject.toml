@@ -1,0 +1,15 @@
+[project]
+name = "wkls_vis_server"
+version = "0.1.0"
+description = "FastAPI backend for wkls-vis"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi>=0.115.0",
+  "uvicorn[standard]>=0.30.0",
+  "wkls",
+  "pandas>=2.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"

@@ -1,4 +1,4 @@
-# wkls-vis
+# Boundaries Explorer
 
 A lightweight React + Python visualization tool for exploring administrative boundaries using the [wkls](https://github.com/wherobots/wkls) library.
 

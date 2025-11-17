@@ -62,3 +62,7 @@ wkls_vis/
 ## Dependencies
 - Python: fastapi, uvicorn, wkls, pandas (managed by `uv`)
 - JS: react, maplibre-gl, @turf/bbox, vite, typescript (managed by `pnpm`)
+
+## Deployment
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed instructions on deploying to Railway or other platforms.

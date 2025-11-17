@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 import json
 import logging
+import os
 import wkls
 from functools import lru_cache
 import threading
@@ -70,13 +71,11 @@ def get_wkt_cached(country: str, region: str, place: str) -> str:
         return obj.wkt()
     return _with_duck_lock(_fn)
 
-# Dev CORS (adjust as needed)
+# CORS configuration - allows environment variable override for production
+allowed_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=[origin.strip() for origin in allowed_origins],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

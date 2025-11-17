@@ -12,4 +12,9 @@ export default defineConfig({
       },
     },
   },
+  preview: {
+    host: true, // Allow external access from Railway
+    port: 3000,
+    strictPort: false,
+  },
 })

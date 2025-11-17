@@ -8,6 +8,19 @@ The application consists of two services:
 - **Backend**: FastAPI + Python (wkls library)
 - **Frontend**: React + Vite + TypeScript
 
+Railway uses **Railpack** (released March 2025) as its build system, which provides zero-config deployments with smaller image sizes and better performance than the deprecated Nixpacks.
+
+### What is Railpack?
+
+Railpack is Railway's newest build system that:
+- Automatically detects your application type and dependencies
+- Produces container images 38-77% smaller than Nixpacks
+- Supports granular version control (major.minor.patch)
+- Uses BuildKit for faster, more efficient builds
+- Works with zero configuration for most projects
+
+The `railway.json` files in this project configure Railpack explicitly, but Railway will use Railpack by default for new deployments.
+
 ## Prerequisites
 
 1. A [Railway](https://railway.app) account (free tier available)
@@ -28,12 +41,12 @@ The application consists of two services:
 
 #### Step 2: Deploy the Backend Service
 
-1. Railway should auto-detect the Python app
+1. Railway should auto-detect the Python app and use the `railway.json` configuration
 2. Configure the service:
    - **Service Name**: `boundary-explorer-backend`
    - **Root Directory**: `/` (or leave empty)
-   - **Build Command**: Auto-detected
-   - **Start Command**: `uvicorn server.app.main:app --host 0.0.0.0 --port $PORT`
+   - **Builder**: Railpack (auto-detected from `railway.json`)
+   - **Start Command**: Configured in `railway.json` as `/app/venv/bin/uvicorn server.app.main:app --host 0.0.0.0 --port $PORT`
 
 3. Add Environment Variables:
    - Go to the service settings → Variables
@@ -50,8 +63,9 @@ The application consists of two services:
 3. Configure the service:
    - **Service Name**: `boundary-explorer-frontend`
    - **Root Directory**: `web`
-   - **Build Command**: `pnpm install && pnpm build`
-   - **Start Command**: `pnpm preview --host 0.0.0.0 --port $PORT`
+   - **Builder**: Railpack (auto-detected from `web/railway.json`)
+   - **Build Command**: Auto-detected by Railpack (`pnpm install && pnpm build`)
+   - **Start Command**: Configured in `web/railway.json` as `pnpm preview --host 0.0.0.0 --port $PORT`
 
 4. Add Environment Variables:
    - Go to the service settings → Variables
@@ -109,10 +123,12 @@ railway variables set VITE_API_BASE=https://your-backend.railway.app/api
 
 The following files have been added for Railway deployment:
 
-- `railway.toml` - Railway service configuration
-- `nixpacks.toml` - Build configuration for Python + Node environment
+- `railway.json` - Backend service configuration for Railpack
+- `web/railway.json` - Frontend service configuration for Railpack
 - `.env.example` - Example environment variables
 - `web/.env.example` - Frontend environment variables
+
+**Note**: Railway now uses Railpack (as of March 2025) instead of the deprecated Nixpacks. The `railway.json` files configure the build and deployment settings for each service.
 
 ## Verifying Deployment
 
@@ -141,6 +157,22 @@ The following files have been added for Railway deployment:
 - View Railway logs for error messages
 - Check healthcheck endpoint: `https://your-backend.railway.app/api/health`
 - Ensure `PORT` environment variable is being used
+
+### Railpack-Specific Issues
+
+#### "uvicorn: command not found" Error
+Railpack installs Python packages into `/app/venv`, and the venv's bin folder may not be in PATH by default. The `railway.json` configuration uses the full path `/app/venv/bin/uvicorn` to resolve this.
+
+If you encounter this error:
+1. Verify the `startCommand` in `railway.json` uses the full path: `/app/venv/bin/uvicorn`
+2. Check the Railway build logs to confirm dependencies installed correctly
+3. You can also modify your start command to activate the venv first: `source /app/venv/bin/activate && uvicorn ...`
+
+#### Python Version Issues
+Railpack automatically detects Python version from your project. You can specify a version by:
+1. Adding a `.python-version` file with the version number (e.g., `3.11`)
+2. Using `runtime.txt` with format `python-3.11`
+3. Specifying in `pyproject.toml` under `[project]` → `requires-python`
 
 ## Cost Optimization
 
